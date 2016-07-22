@@ -93,25 +93,29 @@ libxml2_libs = commands.getoutput('xml2-config --libs')
 if libxml2_libs[:2] not in ["-l", "-L"]:
     sys.exit("Error : cannot get LibXML2 linker flags; do you have the `libxml2` development package installed?")
 
-xmlsec1_cflags = environ.get("XMLSEC1_CFLAGS")
-if xmlsec1_cflags is None:
-    crypto_engine = environ.get("XMLSEC_CRYPTO_ENGINE")
-    if crypto_engine is None:
-      crypto_engine = commands.getoutput("xmlsec1-config --crypto")
-      if not crypto_engine:
-        sys.exit("Error: cannot get XMLSec1 crypto engine")
-    else:
-      assert crypto_engine in ("openssl", "gnutls", "nss")
-    crypto_engine = " --crypto=" + crypto_engine
-    xmlsec1_cflags = commands.getoutput("xmlsec1-config --cflags" + crypto_engine)
-    if xmlsec1_cflags[:2] not in ["-I", "-D"]:
-        sys.exit("Error: cannot get XMLSec1 pre-processor and compiler flags; do you have the `libxmlsec1` development package installed?")
+XMLSEC_CONFIG=environ.get('XMLSEC_CONFIG', '')
+crypto_engine = environ.get("XMLSEC_CRYPTO_ENGINE")
+if crypto_engine is None:
+  crypto_engine = commands.getoutput("xmlsec1-config %s --crypto" % XMLSEC_CONFIG)
+  if not crypto_engine:
+    sys.exit("Error: cannot get XMLSec1 crypto engine")
+else:
+  assert crypto_engine in ("openssl", "gnutls", "nss")
+XMLSEC_CONFIG += " --crypto=" + crypto_engine
+xmlsec1_cflags = commands.getoutput("xmlsec1-config %s --cflags" % XMLSEC_CONFIG)
+print XMLSEC_CONFIG
+print xmlsec1_cflags
+print environ
+if xmlsec1_cflags[:2] not in ["-I", "-D"]:
+    sys.exit("Error: cannot get XMLSec1 pre-processor and compiler flags; do you have the `libxmlsec1` development package installed?")
 
-xmlsec1_libs = environ.get("XMLSEC1_LIBS")
-if xmlsec1_libs is None:
-    xmlsec1_libs = commands.getoutput("xmlsec1-config --libs" + crypto_engine)
-    if xmlsec1_libs[:2] not in ["-l", "-L"]:
-        sys.exit("Error : cannot get XMLSec1 linker flags; do you have the `libxmlsec1` development package installed?")
+xmlsec1_libs = commands.getoutput("xmlsec1-config %s --libs" % XMLSEC_CONFIG)
+if xmlsec1_libs[:2] not in ["-l", "-L"]:
+    sys.exit("Error : cannot get XMLSec1 linker flags; do you have the `libxmlsec1` development package installed?")
+
+XMLSEC_LIBS = environ.get('XMLSEC_LIBS')
+if XMLSEC_LIBS:
+    xmlsec1_libs = ' '.join([xmlsec1_libs, XMLSEC_LIBS])
 
 extract_cflags(libxml2_cflags)
 extract_libs(libxml2_libs)
